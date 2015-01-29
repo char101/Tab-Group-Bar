@@ -20,7 +20,7 @@
       <menuitem id="TabGroupBar-BarContextMenu-Reload" label="Reload tabs"
                       oncommand="objTabGroupBar.reloadGroupTabs();"/>
     </menupopup>
-    <menupopup id="TabGroupBar-TabContextMenu">
+    <menupopup id="TabGroupBar-TabContextMenu" onpopupshowing="objTabGroupBar.onTabPopupShowing(event);">
       <menuitem id="TabGroupBar-TabContextMenu-CloseGroup" 	label="Close Group"
                       oncommand="objTabGroupBar.onCloseGroupContextMenuAction(event)"/>
       <menuitem id="TabGroupBar-TabContextMenu-RenameGroup" 	label="Rename Group"
@@ -54,7 +54,9 @@
           <tabs id="TabGroupBar-TabBox-Tabs" flex="1"/>
         </arrowscrollbox>
 
-      </tabbox>
+			</tabbox>
+			<toolbarbutton class="TabGroup move left" oncommand="objTabGroupBar.moveTabLeft()" label="&#x2190;"/>
+			<toolbarbutton class="TabGroup move right" oncommand="objTabGroupBar.moveTabRight()" label="&#x2192;"/>
     </toolbar>
   </toolbox>
 </overlay>

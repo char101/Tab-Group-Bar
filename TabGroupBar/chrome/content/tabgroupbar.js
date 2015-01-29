@@ -9,6 +9,8 @@ var objTabGroupBar = {
     ignoreNextEvent: false,
     hideWhenMouseIsAway: false,
     debugTabs: [],
+    groupSortOrder: [],
+    SessionStore: Components.classes["@mozilla.org/browser/sessionstore;1"].getService(Components.interfaces.nsISessionStore),
 };
 
 objTabGroupBar.init = function(window){
@@ -106,18 +108,21 @@ objTabGroupBar.addGlobalEventListeners = function(){
 	};
 	var switchSelectedGroupTab = function(event) {
 		if(objTabGroupBar.ignoreNextEvent) return;
-		var activeGroupId = event.target._tabViewTabItem.parent.id;
-		var tabs = objTabGroupBar.tabsContainer.childNodes;
-		for(let i=0;i<tabs.length;i++)
-		{
-			if(tabs[i].value==activeGroupId)
-			{
-				objTabGroupBar.ignoreNextEvent = true; //Ignore the select event from this
-				objTabGroupBar.tabsContainer.selectedIndex = i;
-				objTabGroupBar.ignoreNextEvent = false; 
-				return;
-			}
-		}
+        var tabItem = event.target._tabViewTabItem;
+        if (tabItem) {
+            var activeGroupId = event.target._tabViewTabItem.parent.id;
+            var tabs = objTabGroupBar.tabsContainer.childNodes;
+            for(let i=0;i<tabs.length;i++)
+            {
+                if(tabs[i].value==activeGroupId)
+                {
+                    objTabGroupBar.ignoreNextEvent = true; //Ignore the select event from this
+                    objTabGroupBar.tabsContainer.selectedIndex = i;
+                    objTabGroupBar.ignoreNextEvent = false; 
+                    return;
+                }
+            }
+        }
 	};
 	tabContainer.addEventListener("TabSelect", switchSelectedGroupTab);
 	this.tabsContainer.addEventListener("select", changeGroupTab, false);
@@ -197,6 +202,7 @@ objTabGroupBar.addDebugTabs = function(){
 // Takes a parameter so it can be used as an event handler
 objTabGroupBar.reloadGroupTabs = function(event){
     this.refreshInfo();
+    this.loadSortOrder();
     this.clearGroupTabs();
     this.addGroupTabs();
     this.addDebugTabs();
@@ -209,6 +215,11 @@ objTabGroupBar.addGroupTabs = function(tabView){
 	if (!contentWindow)
 		return;
     let groupItems = contentWindow.GroupItems.groupItems;
+
+    groupItems.sort(function (a, b) {
+        return objTabGroupBar.groupSortOrder.indexOf(a.id) - objTabGroupBar.groupSortOrder.indexOf(b.id)
+    });
+
     let activeGroup = contentWindow.GroupItems.getActiveGroupItem();
     for (let i = 0; i<groupItems.length;i++)
     {
@@ -312,6 +323,10 @@ objTabGroupBar.onCloseGroupContextMenuAction  =  function(event){
 objTabGroupBar.closeGroup = function(groupId){
     var group = this.tabView.getContentWindow().GroupItems.groupItem(groupId);
     group.destroy({immediately: true});
+
+    let index = this.groupSortOrder.indexOf(groupId)
+    this.groupSortOrder.splice(groupId, groupId)
+    this.saveSortOrder()
 };
 
 objTabGroupBar.createNewGroup = function(){
@@ -321,6 +336,9 @@ objTabGroupBar.createNewGroup = function(){
         var blankTab = objTabGroupBar.window.getBrowser().addTab("about:blank");
         GroupItems.moveTabToGroupItem(blankTab, newGroup.id);
         objTabGroupBar.addGroupTab(newGroup);
+
+         objTabGroupBar.groupSortOrder.push(newGroup.id);
+         objTabGroupBar.saveSortOrder();
     });
 };
 
@@ -525,6 +543,56 @@ objTabGroupBar.toggleBar = function(){
     }
 };
 
+objTabGroupBar.saveSortOrder = function() {
+    this.SessionStore.setWindowValue(window, "TabGroupBar_SortOrder", JSON.stringify(this.groupSortOrder))
+};
+
+// load group sort order from session (or from group ID order if no session data saved)
+objTabGroupBar.loadSortOrder = function() {
+    var sortOrder = this.SessionStore.getWindowValue(this.window, "TabGroupBar_SortOrder")
+    // if no saved sort order, we sort according to group id
+    if (sortOrder == "") {
+        sortOrder = this.tabView.getContentWindow().GroupItems.groupItems.map(
+            function (group) { return group.id }
+        );
+    }
+    else {
+        sortOrder = JSON.parse(sortOrder)
+    }
+    this.groupSortOrder = sortOrder
+    // save the sort order to avoid having to recalculate it next time
+    this.saveSortOrder()
+};
+
+objTabGroupBar.moveTabLeft = function(event) {
+    var group = this.tabView.getContentWindow().GroupItems.getActiveGroupItem()
+    var index = this.tabView.getContentWindow().GroupItems.groupItems.indexOf(group)
+
+    // if already leftmost group, can't move any further
+    if (index == 0) return
+
+    // swap our sort order with that of the group to our left
+    this.groupSortOrder[index] = this.groupSortOrder[index-1]
+    this.groupSortOrder[index-1] = group.id
+    this.saveSortOrder()
+
+    this.reloadGroupTabs()
+};
+
+objTabGroupBar.moveTabRight = function(event) {
+    var group = this.tabView.getContentWindow().GroupItems.getActiveGroupItem()
+    var index = this.tabView.getContentWindow().GroupItems.groupItems.indexOf(group)
+
+    // if already rightmost group, can't move any further
+    if (index == this.tabView.getContentWindow().GroupItems.groupItems.length-1) return
+
+    // swap our sort order with that of the group to our left
+    this.groupSortOrder[index] = this.groupSortOrder[index+1]
+    this.groupSortOrder[index+1] = group.id
+    this.saveSortOrder()
+
+    this.reloadGroupTabs()
+};
 
 /////////////////// Initialize the extension on window load ///////////////////////////
 window.addEventListener("load",
