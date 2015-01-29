@@ -306,8 +306,7 @@ objTabGroupBar.onCloseGroupContextMenuAction  =  function(event){
 
 objTabGroupBar.closeGroup = function(groupId){
     var group = this.tabView.getContentWindow().GroupItems.groupItem(groupId);
-    group.getChildren().forEach(function(tab){tab.close();});
-    group.close({immediately: true});
+    group.destroy({immediately: true});
 };
 
 objTabGroupBar.createNewGroup = function(){
