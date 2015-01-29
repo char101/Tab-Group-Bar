@@ -43,7 +43,7 @@ objTabGroupBar.observe = function(subject, topic, data){
 
 objTabGroupBar.refreshInfo = function(){
     let console = (Cu.import("resource://gre/modules/devtools/Console.jsm", {})).console;
-    console.log("Preference change");
+    // console.log("Preference change");
     var preferences = Components.classes["@mozilla.org/preferences-service;1"]
         .getService(Components.interfaces.nsIPrefService).getBranch("extensions.tabgroupbar.");
     preferences.QueryInterface(Components.interfaces.nsIPrefBranch);
