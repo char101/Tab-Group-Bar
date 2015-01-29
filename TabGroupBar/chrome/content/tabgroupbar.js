@@ -18,7 +18,7 @@ objTabGroupBar.init = function(window){
 
     this.tabsContainer = document.getElementById("TabGroupBar-TabBox-Tabs");
     // this.addTab("init called");
-    this.tabView = this.getTabView();
+    this.tabView = window.TabView;
     this.window = window;
 
 
@@ -30,7 +30,10 @@ objTabGroupBar.init = function(window){
     if(this.hideWhenMouseIsAway){
         this.enableHideToolbarOnMouseAway();
     }
-    this.tabView._initFrame(this.addGroupTabs);
+	let self = this;
+    this.tabView._initFrame(function() {
+		self.addGroupTabs(window.TabView);
+	});
 };
 
 objTabGroupBar.observe = function(subject, topic, data){
@@ -200,9 +203,11 @@ objTabGroupBar.reloadGroupTabs = function(event){
 };
 
 // Puts the tabs on the main bar
-objTabGroupBar.addGroupTabs = function(){
-    this.tabView = this.getTabView();
+objTabGroupBar.addGroupTabs = function(tabView){
+    this.tabView = tabView || this.getTabView();
     let contentWindow = this.tabView.getContentWindow();
+	if (!contentWindow)
+		return;
     let groupItems = contentWindow.GroupItems.groupItems;
     let activeGroup = contentWindow.GroupItems.getActiveGroupItem();
     for (let i = 0; i<groupItems.length;i++)
@@ -376,6 +381,14 @@ objTabGroupBar.renameGroup = function(group, title){
     // let group = tabView.getContentWindow().GroupItems.groupItem(groupId);
     // let title = tab.getAttribute("label");
     group.setTitle(title);
+};
+
+objTabGroupBar.onTabPopupShowing = function(event){
+	let group = this.getGroupForTab(event.target.triggerNode);
+	let activeGroup = this.tabView.getContentWindow().GroupItems.getActiveGroupItem();
+	
+	let closeMenuItem = document.getElementById("TabGroupBar-TabContextMenu-CloseGroup");
+	closeMenuItem.style.display = group == activeGroup ? "none" : "block";
 };
 
 objTabGroupBar.onTabListPopupShowing = function(event){
