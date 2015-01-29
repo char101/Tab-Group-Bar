@@ -290,7 +290,7 @@ objTabGroupBar.switchGroupTo = function(groupId){
     else
     {
         tab = this.window.getBrowser().addTab("about:blank");
-        GroupItems.moveTabToGroupItem(tab, groupToActivate.id);
+        groupItems.moveTabToGroupItem(tab, groupToActivate.id);
     }
     this.ignoreNextEvent = true; //tells the extension to ignore the TabSelected event caused by switching groups
     this.window.gBrowser.selectedTab = tabItem.tab;
