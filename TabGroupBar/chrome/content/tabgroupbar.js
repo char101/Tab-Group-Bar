@@ -97,7 +97,7 @@ objTabGroupBar.addGlobalEventListeners = function(){
     var changeGroupTab = function(e) {
 		// let console = (Cu.import("resource://gre/modules/devtools/Console.jsm", {})).console;
 		// console.log("Change group tab");
-		if(!objTabGroupBar.ignoreNextEvent)
+		if(!objTabGroupBar.ignoreNextEvent && e.target.selectedItem)
 			objTabGroupBar.switchGroupTo(e.target.selectedItem.value);
 		objTabGroupBar.ignoreNextEvent = false;
 	};
@@ -256,6 +256,8 @@ objTabGroupBar.addGroupTab = function(groupItem) {
     tab.addEventListener("dblclick", function(event) {objTabGroupBar.createRenameGroupTextBox(event.target);});
     
     this.tabsContainer.appendChild(tab);
+
+	return tab;
 };
 
 
@@ -330,15 +332,18 @@ objTabGroupBar.closeGroup = function(groupId){
 };
 
 objTabGroupBar.createNewGroup = function(){
+	var self = this;
     this.tabView._initFrame(function(){
         var GroupItems = objTabGroupBar.tabView.getContentWindow().GroupItems;
         var newGroup =  GroupItems.newGroup();
         var blankTab = objTabGroupBar.window.getBrowser().addTab("about:blank");
         GroupItems.moveTabToGroupItem(blankTab, newGroup.id);
-        objTabGroupBar.addGroupTab(newGroup);
+        var tab = objTabGroupBar.addGroupTab(newGroup);
 
-         objTabGroupBar.groupSortOrder.push(newGroup.id);
-         objTabGroupBar.saveSortOrder();
+        objTabGroupBar.groupSortOrder.push(newGroup.id);
+        objTabGroupBar.saveSortOrder();
+
+		self.createRenameGroupTextBox(tab);
     });
 };
 
